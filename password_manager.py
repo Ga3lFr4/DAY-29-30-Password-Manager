@@ -2,6 +2,7 @@ from tkinter import *
 from tkinter import messagebox
 from random import randint, choice, shuffle
 import pyperclip
+import json
 
 # ---------------------------- PASSWORD GENERATOR ------------------------------- #
 
@@ -32,19 +33,62 @@ def save_password():
     website = website_entry.get().title()
     username = email_entry.get()
     password = password_entry.get()
+    new_data = {
+        website: {
+            "email": username,
+            "password": password,
+        }
+    }
 
     if len(website) == 0 or len(username) == 0 or len(password) == 0:
         messagebox.showinfo(title="Empty field(s)", message="You need to fill all the info to save the password.")
 
     else:
-        is_ok = messagebox.askokcancel(title=website, message=f"These are the details entered: \n Email: {username}"
-                           f"\nPassword: {password}\nPlease confirme save.")
-        if is_ok:
-            with open("data.txt", "a") as file:
-                file.write(f"{website} | {username} | {password} \n")
+        try:
+            with open("data.json", "r") as file:
+                # Read old data
+                data = json.load(file)
+
+        except (json.decoder.JSONDecodeError, FileNotFoundError):
+            with open("data.json", "w") as file:
+                # If no file or no data in file, create or populate file)
+                json.dump(new_data, file, indent=4)
+
+        else:
+            # Update with new data
+            data.update(new_data)
+
+            with open("data.json", "w") as file:
+                # Write updated data
+                json.dump(data, file, indent=4)
+
+        finally:
             website_entry.delete(0, END)
             password_entry.delete(0, END)
             website_entry.focus()
+
+# ---------------------------- LOOKUP PASSWORD ------------------------------- #
+
+
+def lookup_password():
+    try:
+        with open("data.json", "r") as file:
+            data = json.load(file)
+    except (FileNotFoundError, json.decoder.JSONDecodeError):
+        messagebox.showinfo(title="No passwords", message="There are no passwords yet. Please add some before searching.")
+    else:
+        website = website_entry.get().title()
+        try:
+            website_data = data[website]
+        except KeyError:
+            messagebox.showinfo(title=f"No passwords for {website}",
+                                message=f"There are no passwords for {website} yet")
+        else:
+            username = website_data['email']
+            password = website_data['password']
+            messagebox.showinfo(title=f"{website}",
+                                message=f"email: {username}\npassword: {password}")
+
 
 # ---------------------------- UI SETUP ------------------------------- #
 
@@ -70,11 +114,11 @@ password_label.grid(column=0, row=3)
 
 # ENTRIES
 
-website_entry = Entry(width=42)
+website_entry = Entry(width=24)
 website_entry.focus()
-website_entry.grid(column=1, row=1, columnspan=2)
+website_entry.grid(column=1, row=1)
 
-email_entry = Entry(width=42)
+email_entry = Entry(width=47)
 email_entry.insert(INSERT, "gael.francoise@gmail.com")
 email_entry.grid(column=1, row=2, columnspan=2)
 
@@ -86,8 +130,11 @@ password_entry.grid(column=1, row=3)
 add_button = Button(text="Add", width=36, command=save_password)
 add_button.grid(row=4, column=1, columnspan=2)
 
-generate_password_button = Button(text="Generate Password", command=generate_password)
+generate_password_button = Button(text="Generate Password", command=generate_password, width=18)
 generate_password_button.grid(column=2, row=3)
+
+lookup_password_button = Button(text="Search", command=lookup_password, width=18)
+lookup_password_button.grid(column=2, row=1)
 
 
 window.mainloop()
