@@ -79,16 +79,14 @@ def lookup_password():
     else:
         website = website_entry.get().title()
         if len(website) != 0:
-            try:
-                website_data = data[website]
-            except KeyError:
-                messagebox.showinfo(title=f"No passwords for {website}",
-                                message=f"There are no passwords for {website} yet")
-            else:
-                username = website_data['email']
-                password = website_data['password']
+            if website in data:
+                username = data[website]['email']
+                password = data[website]['password']
                 messagebox.showinfo(title=f"{website}",
                                 message=f"email: {username}\npassword: {password}")
+            else:
+                messagebox.showinfo(title=f"No passwords for {website}",
+                                message=f"There are no passwords for {website} yet")
 
 
 # ---------------------------- UI SETUP ------------------------------- #
